@@ -1,5 +1,7 @@
 SRC = ft_ping.c \
-			ping_parser.c
+			ping_parser.c \
+			send_ping.c \
+			receive_ping.c
 
 CFLAGS = -Wall -Wextra -Werror
 
