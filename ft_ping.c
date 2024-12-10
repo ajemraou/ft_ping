@@ -120,12 +120,12 @@ t_parsed_packet *parse_packet(int sockfd)
     }
     packet->icmp = malloc(sizeof(struct icmp_header));
     packet->ip_header = malloc(sizeof(struct ip));
-    if (!packet->icmp || !packet->ip_header){
+    buffer = malloc(PING_PKT_SIZE + sizeof(struct ip));
+    if (!packet->icmp || !packet->ip_header || !buffer){
         return NULL;
     }
-    buffer = malloc(PING_PKT_SIZE + sizeof(struct ip));
     gettimeofday(&packet->tv_start, NULL);
-     packet->bytes_received = recvfrom(sockfd, buffer, sizeof(buffer), 0,
+     packet->bytes_received = recvfrom(sockfd, buffer, PING_PKT_SIZE + sizeof(struct ip), 0,
                                     (struct sockaddr*)&recv_addr, &addr_len);
     gettimeofday(&packet->tv_end, NULL);
     packet->ip_header = (struct ip*)buffer;
@@ -212,7 +212,7 @@ int main(int argc, char *argv[]) {
            if (rtt > max_rtt) max_rtt = rtt;
        }
 
-        usleep(PING_SLEEP_RATE * 5);
+        usleep(PING_SLEEP_RATE);
     }
     printf("\n--- %s ping statistics ---\n", args->ip);
     printf("%d packets transmitted, %d received, %.1f%% packet loss\n",
