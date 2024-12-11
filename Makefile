@@ -5,7 +5,11 @@ SRC = main.c \
 			receive_ping.c
 
 
-BNS = main.c
+BNS = bonus/main_bonus.c \
+			bonus/ft_ping_bonus.c \
+			bonus/ping_parser_bonus.c \
+			bonus/send_ping_bonus.c \
+			bonus/receive_ping_bonus.c
 
 CFLAGS = -Wall -Wextra -Werror
 
