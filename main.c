@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
     signal(SIGINT, interrupt_handler);
     printf("FT_PING %s (%s)\n", args->hostname, args->ip);
     if (args->option == VERBOSE){
-        printf("ping: sock4.fd: %d (socktype: SOCK_RAW), hints.ai_family: AF_INET\n", sockfd);
+        printf("ping: sock4.fd: %d (socktype: SOCK_RAW), hints.ai_family: AF_INET\n\n", sockfd);
     }
     ft_ping(args, sockfd, &dest_addr);
     close(sockfd);
