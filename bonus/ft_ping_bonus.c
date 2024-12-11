@@ -1,4 +1,4 @@
-#include "ft_ping.h"
+#include "ft_ping_bonus.h"
 
 volatile sig_atomic_t keep_running = 1;
 

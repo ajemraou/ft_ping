@@ -1,5 +1,5 @@
-#ifndef FT_PING_H
-#define FT_PING_H
+#ifndef FT_PING_BONUS_H
+#define FT_PING_BONUS_H
 
 #include <netinet/in.h>
 #include <stdio.h>

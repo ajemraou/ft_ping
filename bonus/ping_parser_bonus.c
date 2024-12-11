@@ -1,4 +1,4 @@
-#include "ft_ping.h"
+#include "ft_ping_bonus.h"
 
 int resolve_hostname(const char *hostname, struct sockaddr_in *dest_addr) {
   struct addrinfo hints, *result;

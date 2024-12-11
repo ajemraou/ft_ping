@@ -1,4 +1,4 @@
-#include "ft_ping.h"
+#include "ft_ping_bonus.h"
 
 uint16_t    calculate_checksum(void *buffer, int length) {
     unsigned long   sum;
