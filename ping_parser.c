@@ -7,7 +7,6 @@ int resolve_hostname(const char *hostname, struct sockaddr_in *dest_addr) {
   hints.ai_family = AF_INET;
 
   if (getaddrinfo(hostname, NULL, &hints, &result) != 0) {
-      perror("getaddrinfo");
       return -1;
   }
   memcpy(&dest_addr->sin_addr, &((struct sockaddr_in *)result->ai_addr)->sin_addr, sizeof(dest_addr->sin_addr));
