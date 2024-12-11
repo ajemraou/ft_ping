@@ -40,7 +40,12 @@ void fill_args(t_args *arg, char *hostname) {
   free(arg->hostname);
   free(arg->ip);
   arg->hostname = strdup(hostname);
-  arg->ip = strdup(inet_ntoa(dest_addr.sin_addr));
+  if (is_valid_ip(hostname) == true){
+    arg->ip = strdup(hostname);
+  }
+  else {
+    arg->ip = strdup(inet_ntoa(dest_addr.sin_addr));
+  }
 }
 
 enum options is_option(char *arg) {
@@ -79,5 +84,6 @@ t_args *get_new_args() {
   args->ip = NULL;
   args->option = 0;
   args->invalid_arg = NULL;
+  args->packets_sent = 0;
   return args;
 }

@@ -28,17 +28,44 @@ t_parsed_packet *parse_packet(int sockfd)
     return packet;
 }
 
-float receive_ping(int sockfd, char *addr_str) {
+
+void handle_packet(t_parsed_packet *packet) {
+    switch (packet->icmp->type) {
+        case ICMP_DEST_UNREACH:
+            printf("Destination Unreachable from %s, Code: %d\n",
+                inet_ntoa(*(struct in_addr *)&packet->ip_header->ip_dst),
+                packet->icmp->code);
+            break;
+        case ICMP_TIME_EXCEEDED:
+            printf("Time Exceeded from %s\n",
+                inet_ntoa(*(struct in_addr *)&packet->ip_header->ip_dst));
+            break;
+        case ICMP_REDIRECT:
+            printf("Redirect Message %s\n",
+                inet_ntoa(*(struct in_addr *)&packet->ip_header->ip_dst));
+            break;
+        case ICMP_PARAMPROB:
+            printf("Parameter Problem: Bad IP header %s\n",
+                inet_ntoa(*(struct in_addr *)&packet->ip_header->ip_dst));
+            break;
+        default:
+            printf("Unexpected ICMP Packet: Type=%d, Code=%d\n",
+                packet->icmp->type, packet->icmp->code);
+    }
+}
+
+float receive_ping(int sockfd, t_args *args) {
     t_parsed_packet *packet;
     float            rtt;
 
     packet = parse_packet(sockfd);
+    if (args->option == VERBOSE && packet->icmp->type) {
+        handle_packet(packet);
+    }
     if (packet->bytes_received < 0) {
-        if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            printf("Request timeout for icmp_seq \n"); // packets_sent variable here ???
-            return -1;
+        if ((errno == EAGAIN || errno == EWOULDBLOCK) && args->option == VERBOSE) {
+            printf("Request timeout for icmp_seq %d\n", args->packets_sent);
         }
-        perror("recvfrom failed");
         return -1;
     }
     if (packet->icmp->type == ICMP_ECHOREPLY) {
@@ -47,7 +74,7 @@ float receive_ping(int sockfd, char *addr_str) {
 
         printf("%ld bytes from %s: icmp_seq=%d ttl=%d time=%.1f ms\n",
                packet->bytes_received - packet->ip_header_length,
-               addr_str,
+               args->ip,
                ntohs(packet->icmp->sequence),
                packet->ip_header->ip_ttl,
                rtt);
