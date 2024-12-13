@@ -1,5 +1,41 @@
 #include "ft_ping_bonus.h"
 
+int parse_int(const char *value, int min, int max, const char *flag) {
+    char  *endptr;
+    long  result;
+
+    errno = 0;
+    result = strtol(value, &endptr, 10);
+    if (errno == ERANGE || result > max || result < min) {
+        fprintf(stderr, "Error: %s value '%s' is out of range (%d to %d).\n", flag, value, min, max);
+        exit(EXIT_FAILURE);
+    }
+    if (*endptr != '\0') {
+        fprintf(stderr, "Error: Invalid %s value '%s'.\n", flag, value);
+        exit(EXIT_FAILURE);
+    }
+
+    return (int)result;
+}
+
+float parse_float(const char *value, float min, float max, const char *flag) {
+    char    *endptr;
+    double  result;
+
+    result = strtod(value, &endptr);
+    errno = 0;
+    if (errno == ERANGE || result > max || result < min) {
+        fprintf(stderr, "Error: %s value '%s' is out of range (%.1f to %.1f).\n", flag, value, min, max);
+        exit(EXIT_FAILURE);
+    }
+    if (*endptr != '\0') {
+        fprintf(stderr, "Error: Invalid %s value '%s'.\n", flag, value);
+        exit(EXIT_FAILURE);
+    }
+
+    return (float)result;
+}
+
 int resolve_hostname(const char *hostname, struct sockaddr_in *dest_addr) {
   struct addrinfo hints, *result;
 
@@ -29,7 +65,7 @@ bool is_valid_domain(const char *domain, struct sockaddr_in *dest_addr) {
   return is_valid_ip(inet_ntoa(dest_addr->sin_addr));
 }
 
-void fill_args(t_args *arg, char *hostname) {
+void fill_args(t_args *arg, const char *hostname) {
   struct sockaddr_in  dest_addr;
   if (is_valid_domain(hostname, &dest_addr) == false){
       free(arg->invalid_arg);
@@ -47,33 +83,63 @@ void fill_args(t_args *arg, char *hostname) {
   }
 }
 
-enum options is_option(char *arg) {
-  if (strcmp(arg, "-?") == 0 || strcmp(arg, "--help") == 0) {
-    return HELP;
-  } else if (strcmp(arg, "-v") == 0) {
-    return VERBOSE;
+PingFlags  get_option( const char *arg ){
+  if (strcmp(arg, "-c") == 0){
+    return FLAG_COUNT;
   }
-  return DOMAIN;
+  else if (strcmp(arg, "-i") == 0){
+    return FLAG_INTERVAL;
+  }
+  else if (strcmp(arg, "-w") == 0){
+    return FLAG_TIMEOUT;
+  }
+  else if (strcmp(arg, "-W") == 0){
+    return FLAG_REPLY_TIMEOUT;
+  }
+  else if (strcmp(arg, "-t") == 0 || strcmp(arg, "--ttl") == 0){
+    return FLAG_TTL;
+  }
+  else if (strcmp(arg, "--usage") == 0){
+    return FLAG_USAGE;
+  }
+  else if (strcmp(arg, "-?") == 0 || strcmp(arg, "--help") == 0) {
+    return FLAG_HELP;
+  }
+  else if (strcmp(arg, "-v") == 0) {
+    return FLAG_VERBOSE;
+  }
+  return FLAG_DOMAIN;
 }
 
-void  check_args(char **argv, t_args *args) {
-  enum options  option;
-  int           i;
+void parse_flags(int argc, char *argv[], t_args *options) {
+  int i;
 
   i = 1;
-  while (argv[i]) {
-    option = is_option(argv[i]);
-    if (option == HELP) {
-      args->option = HELP;
-      break;
-    }
-    else if (option == VERBOSE) {
-      args->option = VERBOSE;
-    }
-    else if (option == DOMAIN) {
-      fill_args(args, argv[i]);
-    }
-    i++;
+  while (i < argc && !options->invalid_arg)
+  {
+      if (get_option(argv[i]) == FLAG_HELP) {
+        options->option = FLAG_HELP;
+        break;
+      } else if (get_option(argv[i]) == FLAG_USAGE) {
+        options->option = FLAG_USAGE;
+        break;
+      } else if (get_option(argv[i]) == FLAG_INTERVAL && i + 1 < argc) {
+          options->interval = parse_int(argv[++i], 1, MAX_INTERVAL, "-i");
+      } else if (get_option(argv[i]) == FLAG_TTL && i + 1 < argc) {
+          options->ttl = parse_int(argv[++i], 1, MAX_TTL, "--ttl");
+      } else if (get_option(argv[i]) == FLAG_TIMEOUT && i + 1 < argc) {
+          options->timeout = parse_int(argv[++i], 1, INT_MAX, "-w");
+      } else if (get_option(argv[i]) == FLAG_REPLY_TIMEOUT && i + 1 < argc) {
+          options->reply_timeout = parse_float(argv[++i], MIN_REPLY_TIMEOUT, FLT_MAX, "-W");
+      } else if (get_option(argv[i]) == FLAG_COUNT && i + 1 < argc) {
+          options->count = parse_int(argv[++i], 1, INT_MAX, "-c");
+      } else if (get_option(argv[i]) == FLAG_DOMAIN) {
+        fill_args(options, argv[i]);
+      } else {
+          fprintf(stderr, "Error: Unknown or incomplete flag '%s'.\n", argv[i]);
+          exit(EXIT_FAILURE);
+      }
+      i++;
   }
 }
 
@@ -84,5 +150,10 @@ t_args *get_new_args() {
   args->option = 0;
   args->invalid_arg = NULL;
   args->packets_sent = 0;
+  args->interval = 1;
+  args->ttl = 64;
+  args->timeout = 0;
+  args->reply_timeout = RECV_TIMEOUT;
+  args->count = -1;
   return args;
 }
