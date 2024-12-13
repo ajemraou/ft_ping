@@ -21,24 +21,42 @@
 #include <sys/time.h>
 #include <errno.h>
 #include <signal.h>
+#include <limits.h>
+#include <float.h>
+#include <time.h>
 
 #define DATA_SIZE 56
 #define PING_PKT_SIZE 64
 #define PING_SLEEP_RATE 1000000
 #define RECV_TIMEOUT 1
+#define PING_PRECISION 1000     /* Millisecond precision */
+#define MAX_INTERVAL 3600      // Maximum interval for -i (1 hour)
+#define MIN_REPLY_TIMEOUT 0.2  // Minimum reply timeout for -W (200ms)
+#define MAX_TTL 255            // Maximum TTL for --ttl (1 to 255)
 
-enum options {
-    HELP = 1,
-    VERBOSE = 2,
-    DOMAIN = 3,
-};
+typedef enum {
+    FLAG_USAGE,           // For --usage: Display usage information
+    FLAG_HELP,            // For --help: Display help information
+    FLAG_VERBOSE,         // For -v: Verbose mode
+    FLAG_DOMAIN,          // For Domain name
+    FLAG_INTERVAL,        // For -i: Interval between packets
+    FLAG_TTL,             // For --ttl: Time-To-Live
+    FLAG_TIMEOUT,         // For -w: Total timeout for the program
+    FLAG_REPLY_TIMEOUT,   // For -W: Timeout for each packet reply
+    FLAG_COUNT,           // For -c: Number of packets to send
+} PingFlags;
 
 typedef struct arguments {
-    enum options    option;
-    char            *hostname;
-    char            *ip;
-    char            *invalid_arg;
-    int             packets_sent;
+    PingFlags   option;
+    char        *hostname;
+    char        *ip;
+    char        *invalid_arg;
+    int         interval;       // Interval between sending packets (-i)
+    int         ttl;            // Time-To-Live (--ttl)
+    int         timeout;        // Total timeout for the program (-w)
+    float       reply_timeout; // Reply timeout for each packet (-W)
+    int         count;          // Number of packets to send (-c)
+    int         packets_sent;
 }t_args;
 
 typedef struct  icmp_header {
@@ -65,14 +83,14 @@ typedef struct statistics{
 }t_statis;
 
 /***  Parsing */
-void    check_args(char **argv, t_args *args);
+void parse_flags(int argc, char *argv[], t_args *options);
 t_args *get_new_args();
 /***------- send ping --------------------*/
 int     send_ping(int sockfd, struct sockaddr_in *dest_addr, int seq_no);
 /***------- recieve ping -----------------*/
 float   receive_ping(int sockfd, t_args *args);
 /***------- ping -------------------------*/
-int     socket_setup( const char *ip_address, struct sockaddr_in *dest_addr );
+int     socket_setup( t_args *args, struct sockaddr_in *dest_addr );
 void    interrupt_handler(int signal);
 int     ft_ping( t_args *args, int sockfd, struct sockaddr_in *dest_addr );
 
