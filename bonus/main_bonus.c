@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
     printf("Timeout         : %d seconds\n", args->timeout);
     printf("Reply Timeout   : %.1f seconds\n", args->reply_timeout);
     printf("Count           : %d\n", args->count == -1 ? 0 : args->count);
-    return (0);
+    // return (0);
     if (argc < 2) {
         printf("Usage: %s <destination_ip>\n", argv[0]);
         return 1;

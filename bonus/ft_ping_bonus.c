@@ -31,8 +31,14 @@ int socket_setup( t_args *args, struct sockaddr_in *dest_addr )
     }
     tv_timeout.tv_sec = args->reply_timeout;
     tv_timeout.tv_usec = 0;
-    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO,
-               &tv_timeout, sizeof(tv_timeout));
+    if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO,&tv_timeout, sizeof(tv_timeout))) {
+        close(sockfd);
+        exit(EXIT_FAILURE);
+    }
+    if (setsockopt(sockfd, IPPROTO_IP, IP_TTL, &args->ttl, sizeof(args->ttl)) < 0) {
+        close(sockfd);
+        exit(EXIT_FAILURE);
+    }
     memset(dest_addr, 0, sizeof(*dest_addr));
     dest_addr->sin_family = AF_INET;
     if (inet_pton(AF_INET, args->ip, &dest_addr->sin_addr) <= 0) {

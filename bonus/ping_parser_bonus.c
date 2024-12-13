@@ -120,6 +120,8 @@ void parse_flags(int argc, char *argv[], t_args *options) {
       if (get_option(argv[i]) == FLAG_HELP) {
         options->option = FLAG_HELP;
         break;
+      } else if (get_option(argv[i]) == FLAG_VERBOSE){
+        options->option = FLAG_VERBOSE;
       } else if (get_option(argv[i]) == FLAG_USAGE) {
         options->option = FLAG_USAGE;
         break;

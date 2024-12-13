@@ -39,13 +39,13 @@ int send_ping(int sockfd, struct sockaddr_in *dest_addr, int seq_no) {
     int     result;
 
     packet = malloc(PING_PKT_SIZE);
-    icmp = (struct icmp_header *)packet;
+    icmp = (t_icmp *)packet;
     memset(packet, 0, PING_PKT_SIZE);
     icmp->type = ICMP_ECHO;
     icmp->code = 0;
     icmp->identifier = htons(getpid() & 0xFFFF);
     icmp->sequence = htons(seq_no);
-    fill_data(packet + sizeof(struct icmp_header), DATA_SIZE);
+    fill_data(packet + sizeof(t_icmp), DATA_SIZE);
     icmp->checksum = calculate_checksum((uint16_t *)icmp, PING_PKT_SIZE);
     result = sendto(sockfd, packet, PING_PKT_SIZE, 0,
                  (struct sockaddr *)dest_addr, sizeof(*dest_addr));
