@@ -59,11 +59,11 @@ float receive_ping(int sockfd, t_args *args) {
     float            rtt;
 
     packet = parse_packet(sockfd);
-    if (args->option == VERBOSE && packet->icmp->type) {
+    if (args->option == FLAG_VERBOSE && packet->icmp->type) {
         handle_packet(packet);
     }
     if (packet->bytes_received < 0) {
-        if ((errno == EAGAIN || errno == EWOULDBLOCK) && args->option == VERBOSE) {
+        if ((errno == EAGAIN || errno == EWOULDBLOCK) && args->option == FLAG_VERBOSE) {
             printf("Request timeout for icmp_seq %d\n", args->packets_sent);
         }
         return -1;
