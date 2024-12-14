@@ -106,7 +106,7 @@ float receive_ping(int sockfd, t_args *args) {
     if (packet->icmp->type) {
         handle_packet(packet);
     }
-    if (args->option == FLAG_VERBOSE){
+    if (args->option == FLAG_VERBOSE && packet->icmp->type){
         display_verbose_info(packet->ip_header, packet->icmp);
     }
     if (packet->bytes_received < 0) {

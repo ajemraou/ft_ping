@@ -22,19 +22,21 @@
 #include <errno.h>
 #include <signal.h>
 
-#define DATA_SIZE 56
-#define PING_PKT_SIZE 64
-#define PING_SLEEP_RATE 1000000
-#define RECV_TIMEOUT 1
+#define DATA_SIZE 56            // Defines the size of the data payload in the ICMP Echo Request.
+#define PING_PKT_SIZE 64        // Defines the total size of the ICMP packet, including both the header and payload.
+#define PING_SLEEP_RATE 1000000 // Defines the sleep rate between sending ICMP packets, measured in microseconds.
+#define RECV_TIMEOUT 1          // Defines the timeout for receiving ICMP Echo Replies, measured in seconds.
 
-enum options {
-    HELP = 1,
-    VERBOSE = 2,
-    DOMAIN = 3,
-};
+
+typedef enum {
+    FLAG_USAGE,           // For --usage: Display usage information
+    FLAG_HELP,            // For --help: Display help information
+    FLAG_VERBOSE,         // For -v: Verbose mode
+    FLAG_DOMAIN,          // For Domain name
+} PingFlags;
 
 typedef struct arguments {
-    enum options    option;
+    PingFlags       option;
     char            *hostname;
     char            *ip;
     char            *invalid_arg;
@@ -65,7 +67,7 @@ typedef struct statistics{
 }t_statis;
 
 /***  Parsing */
-void    check_args(char **argv, t_args *args);
+void    parse_flags(int argc, char *argv[], t_args *options);
 t_args *get_new_args();
 /***------- send ping --------------------*/
 int     send_ping(int sockfd, struct sockaddr_in *dest_addr, int seq_no);

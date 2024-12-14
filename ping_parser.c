@@ -1,5 +1,6 @@
 #include "ft_ping.h"
 
+
 int resolve_hostname(const char *hostname, struct sockaddr_in *dest_addr) {
   struct addrinfo hints, *result;
 
@@ -29,7 +30,7 @@ bool is_valid_domain(const char *domain, struct sockaddr_in *dest_addr) {
   return is_valid_ip(inet_ntoa(dest_addr->sin_addr));
 }
 
-void fill_args(t_args *arg, char *hostname) {
+void fill_args(t_args *arg, const char *hostname) {
   struct sockaddr_in  dest_addr;
   if (is_valid_domain(hostname, &dest_addr) == false){
       free(arg->invalid_arg);
@@ -47,33 +48,40 @@ void fill_args(t_args *arg, char *hostname) {
   }
 }
 
-enum options is_option(char *arg) {
-  if (strcmp(arg, "-?") == 0 || strcmp(arg, "--help") == 0) {
-    return HELP;
-  } else if (strcmp(arg, "-v") == 0) {
-    return VERBOSE;
+PingFlags  get_option( const char *arg ){
+  if (strcmp(arg, "--usage") == 0){
+    return FLAG_USAGE;
   }
-  return DOMAIN;
+  else if (strcmp(arg, "-?") == 0 || strcmp(arg, "--help") == 0) {
+    return FLAG_HELP;
+  }
+  else if (strcmp(arg, "-v") == 0) {
+    return FLAG_VERBOSE;
+  }
+  return FLAG_DOMAIN;
 }
 
-void  check_args(char **argv, t_args *args) {
-  enum options  option;
-  int           i;
+void parse_flags(int argc, char *argv[], t_args *options) {
+  int i;
 
   i = 1;
-  while (argv[i]) {
-    option = is_option(argv[i]);
-    if (option == HELP) {
-      args->option = HELP;
-      break;
-    }
-    else if (option == VERBOSE) {
-      args->option = VERBOSE;
-    }
-    else if (option == DOMAIN) {
-      fill_args(args, argv[i]);
-    }
-    i++;
+  while (i < argc && !options->invalid_arg)
+  {
+      if (get_option(argv[i]) == FLAG_HELP) {
+        options->option = FLAG_HELP;
+        break;
+      } else if (get_option(argv[i]) == FLAG_VERBOSE){
+        options->option = FLAG_VERBOSE;
+      } else if (get_option(argv[i]) == FLAG_USAGE) {
+        options->option = FLAG_USAGE;
+        break;
+      } else if (get_option(argv[i]) == FLAG_DOMAIN) {
+        fill_args(options, argv[i]);
+      } else {
+          fprintf(stderr, "Error: Unknown or incomplete flag '%s'.\n", argv[i]);
+          exit(EXIT_FAILURE);
+      }
+      i++;
   }
 }
 
