@@ -6,23 +6,34 @@ t_parsed_packet *parse_packet(int sockfd)
     struct sockaddr_in  recv_addr;
     char                *buffer;
     socklen_t           addr_len;
+    struct timeval      timeout;
 
+    timeout.tv_sec = 1;
+    timeout.tv_usec = 0;
     addr_len = sizeof(recv_addr);
     packet = malloc(sizeof(struct parsed_packet));
     if (!packet){
         return NULL;
     }
-    buffer = malloc(PING_PKT_SIZE + sizeof(struct ip));
-    if (!buffer){
-        return NULL;
-    }
-    gettimeofday(&packet->tv_start, NULL);
-     packet->bytes_received = recvfrom(sockfd, buffer, PING_PKT_SIZE + sizeof(struct ip), 0,
+    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+    while (true)
+    {
+        buffer = malloc(PING_PKT_SIZE + sizeof(struct ip));
+        if (!buffer){
+            return NULL;
+        }
+        gettimeofday(&packet->tv_start, NULL);
+        packet->bytes_received = recvfrom(sockfd, buffer, PING_PKT_SIZE + sizeof(struct ip), 0,
                                     (struct sockaddr*)&recv_addr, &addr_len);
+        packet->ip_header = (struct ip*)buffer;
+        packet->ip_header_length = packet->ip_header->ip_hl * 4;
+        packet->icmp = (struct icmp_header*)(buffer + packet->ip_header_length);
+        if (packet->icmp->type == ICMP_ECHOREPLY && ntohs(packet->icmp->identifier) == getpid()) {
+           break;
+        }
+        free(buffer);
+    }
     gettimeofday(&packet->tv_end, NULL);
-    packet->ip_header = (struct ip*)buffer;
-    packet->ip_header_length = packet->ip_header->ip_hl * 4;
-    packet->icmp = (struct icmp_header*)(buffer + packet->ip_header_length);
     return packet;
 }
 

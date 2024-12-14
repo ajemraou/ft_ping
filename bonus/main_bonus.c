@@ -19,6 +19,7 @@ int main(int argc, char *argv[]) {
         printf("ft_ping: unknown host: %s\n", args->invalid_arg);
         return 1;
     }
+    args->identifier = htons(getpid());
     sockfd = socket_setup(args, &dest_addr);
     signal(SIGINT, interrupt_handler);
     printf("FT_PING %s (%s)\n", args->hostname, args->ip);

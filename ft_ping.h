@@ -41,6 +41,7 @@ typedef struct arguments {
     char            *ip;
     char            *invalid_arg;
     int             packets_sent;
+    int         identifier;
 }t_args;
 
 typedef struct  icmp_header {

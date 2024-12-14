@@ -68,6 +68,8 @@ typedef struct arguments {
     float       reply_timeout;  // Reply timeout for each packet (-W)
     int         count;          // Number of packets to send (-c)
     int         packets_sent;   // The total number of packets sent during execution.
+    int         identifier;     // Process ID as unique identifier
+
 }t_args;
 
 
