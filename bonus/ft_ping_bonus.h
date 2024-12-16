@@ -2,6 +2,7 @@
 #define FT_PING_BONUS_H
 
 #include <netinet/in.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <arpa/inet.h>
 #include <stdbool.h>
@@ -26,7 +27,7 @@
 #include <time.h>
 
 #define DATA_SIZE 56            // Defines the size of the data payload in the ICMP Echo Request.
-#define PING_PKT_SIZE 64        // Defines the total size of the ICMP packet, including both the header and payload.
+#define PAYLOAD_SIZE 64         // Defines the total size of the ICMP packet, including both the header and payload.
 #define PING_SLEEP_RATE 1000000 // Defines the sleep rate between sending ICMP packets, measured in microseconds.
 #define RECV_TIMEOUT 1          // Defines the timeout for receiving ICMP Echo Replies, measured in seconds.
 #define PING_PRECISION 1000     // Millisecond precision
@@ -68,22 +69,9 @@ typedef struct arguments {
     float       reply_timeout;  // Reply timeout for each packet (-W)
     int         count;          // Number of packets to send (-c)
     int         packets_sent;   // The total number of packets sent during execution.
-    int         identifier;     // Process ID as unique identifier
-
+    uint16_t    identifier;     // Process ID as unique identifier
+    uint16_t    checksum;       // Data Checksum
 }t_args;
-
-
-/***
- * Represents an ICMP header used for constructing and parsing ICMP packets.
- *
- */
-typedef struct  icmp_header {
-    uint8_t     type;       // ICMP type field (e.g., 8 for Echo Request, 0 for Echo Reply).
-    uint8_t     code;       // ICMP code field (additional information for the type, typically 0 for Echo Request/Reply).
-    uint16_t    checksum;   // Checksum for error-checking the ICMP header and data.
-    uint16_t    identifier; // Unique identifier used to match Echo Requests and Replies (commonly the process ID).
-    uint16_t    sequence;   // Sequence number for tracking individual Echo Requests.
-}t_icmp;
 
 
 /***
@@ -91,7 +79,7 @@ typedef struct  icmp_header {
  *
  */
 typedef struct  parsed_packet {
-    struct icmp_header  *icmp;              // Pointer to the parsed ICMP header structure (t_icmp).
+    struct icmphdr      *icmp;              // Pointer to the parsed ICMP header structure.
     struct timeval      tv_start, tv_end;   // Timestamp when the ICMP Echo Request was sent/received.
     struct ip           *ip_header;         // Pointer to the parsed IP header (struct ip) containing details about the source, destination, and routing.
     ssize_t             bytes_received;     // Number of bytes received in the packet.
@@ -142,8 +130,7 @@ void parse_flags(int argc, char *argv[], t_args *options);
  *
  * @param sockfd: The socket file descriptor.
  * @param dest_addr: Pointer to the destination address structure (struct sockaddr_in).
- * @param seq_no: The sequence number for the ICMP packet.
- *
+ * @param args: Pointer to a t_args structure containing user-defined options (e.g., TTL, timeout).
  * @return
  * - 0 on success.
  * - Non-zero value if the packet could not be sent.
@@ -151,7 +138,7 @@ void parse_flags(int argc, char *argv[], t_args *options);
  * - Constructs an ICMP Echo Request packet.
  * - Uses sendto() to send the packet to the destination.
  */
-int     send_ping(int sockfd, struct sockaddr_in *dest_addr, int seq_no);
+int     send_ping(int sockfd, struct sockaddr_in *dest_addr, t_args *args);
 
 
 

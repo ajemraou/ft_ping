@@ -8,6 +8,7 @@ void    interrupt_handler(int signal) {
     }
 }
 
+
 t_statis    *init_statistics_list()
 {
     t_statis *list;
@@ -84,7 +85,7 @@ int ft_ping( t_args *args, int sockfd, struct sockaddr_in *dest_addr )
     list = init_statistics_list();
     while (keep_running && args->count) {
         args->packets_sent++;
-        if (send_ping(sockfd, dest_addr, args->packets_sent) < 0) {
+        if (send_ping(sockfd, dest_addr, args) < 0) {
             continue;
         }
         rtt = receive_ping(sockfd, args);

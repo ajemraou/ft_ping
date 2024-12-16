@@ -52,6 +52,7 @@ int resolve_hostname(const char *hostname, struct sockaddr_in *dest_addr) {
 
 bool is_valid_ip(const char *ip) {
     struct sockaddr_in sa;
+  
     return inet_pton(AF_INET, ip, &(sa.sin_addr)) == 0 ? false : true;
 }
 
@@ -115,7 +116,7 @@ void parse_flags(int argc, char *argv[], t_args *options) {
   int i;
 
   i = 1;
-  while (i < argc && !options->invalid_arg)
+  while (i < argc)
   {
       if (get_option(argv[i]) == FLAG_HELP) {
         options->option = FLAG_HELP;
