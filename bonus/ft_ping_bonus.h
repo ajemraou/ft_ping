@@ -70,7 +70,6 @@ typedef struct arguments {
     int         count;          // Number of packets to send (-c)
     int         packets_sent;   // The total number of packets sent during execution.
     uint16_t    identifier;     // Process ID as unique identifier
-    uint16_t    checksum;       // Data Checksum
 }t_args;
 
 

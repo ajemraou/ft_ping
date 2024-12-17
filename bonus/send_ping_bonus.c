@@ -47,7 +47,6 @@ int send_ping(int sockfd, struct sockaddr_in *dest_addr, t_args *args) {
     icmp->un.echo.sequence = htons(args->packets_sent);
     fill_payload(packet + sizeof(struct icmphdr), DATA_SIZE);
     icmp->checksum = calculate_checksum((uint16_t *)icmp, sizeof(struct icmphdr) + PAYLOAD_SIZE);
-    args->checksum = icmp->checksum;
     result = sendto(sockfd, packet, PAYLOAD_SIZE, 0,
                  (struct sockaddr *)dest_addr, sizeof(*dest_addr));
     free(packet);

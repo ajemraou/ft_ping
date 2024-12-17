@@ -143,9 +143,6 @@ float receive_ping(int sockfd, t_args *args) {
     if (packet->icmp->type == ICMP_ECHOREPLY) {
         rtt = (packet->tv_end.tv_sec - packet->tv_start.tv_sec) * 1000.0 +
                    (packet->tv_end.tv_usec - packet->tv_start.tv_usec) / 1000.0;
-        if (packet->icmp->checksum != args->checksum){
-            printf("checksum mismatch from %s\n", args->ip);
-        }
         printf("%ld bytes from %s: icmp_seq=%d ttl=%d time=%.3f ms\n",
                packet->bytes_received - packet->ip_header_length,
                args->ip,

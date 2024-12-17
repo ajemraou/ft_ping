@@ -59,7 +59,13 @@ int main(int argc, char *argv[]) {
     args = get_new_args();
     parse_flags(argc, argv, args);
     if (args->option == FLAG_HELP){
+        destruct_resources(args);
         display_help();
+    }
+    else if (args->option == FLAG_USAGE){
+        printf("Usage: %s [-v] [-w DEADLINE] [-W TIMEOUT] [--ttl=N] [-i INTERVAL] [--usage] HOST\n", argv[0]);
+        destruct_resources(args);
+        return 0;
     }
     if (error_handling(argc, args, argv[0])){
         destruct_resources(args);

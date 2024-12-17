@@ -52,7 +52,7 @@ int resolve_hostname(const char *hostname, struct sockaddr_in *dest_addr) {
 
 bool is_valid_ip(const char *ip) {
     struct sockaddr_in sa;
-  
+
     return inet_pton(AF_INET, ip, &(sa.sin_addr)) == 0 ? false : true;
 }
 
@@ -150,7 +150,7 @@ t_args *get_new_args() {
   t_args *args = malloc(sizeof(t_args));
   args->hostname = NULL;
   args->ip = NULL;
-  args->option = 0;
+  args->option = -1;
   args->invalid_arg = NULL;
   args->packets_sent = 0;
   args->interval = 1;
