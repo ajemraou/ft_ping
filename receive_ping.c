@@ -1,12 +1,15 @@
 #include "ft_ping.h"
 
-t_parsed_packet *parse_packet(int sockfd)
+t_parsed_packet *parse_packet(int sockfd, int identifier)
 {
-    t_parsed_packet    *packet;
+    t_parsed_packet     *packet;
     struct sockaddr_in  recv_addr;
+    struct timeval      timeout;
+    struct icmphdr      *orig_icmp_header;
     char                *buffer;
     socklen_t           addr_len;
-    struct timeval      timeout;
+    struct ip           *orig_ip_header;
+    int                 orig_ip_header_length;
 
     timeout.tv_sec = 1;
     timeout.tv_usec = 0;
@@ -18,18 +21,27 @@ t_parsed_packet *parse_packet(int sockfd)
     setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
     while (true)
     {
-        buffer = malloc(PING_PKT_SIZE + sizeof(struct ip));
+        buffer = malloc(PAYLOAD_SIZE + sizeof(struct ip));
         if (!buffer){
             return NULL;
         }
         gettimeofday(&packet->tv_start, NULL);
-        packet->bytes_received = recvfrom(sockfd, buffer, PING_PKT_SIZE + sizeof(struct ip), 0,
+        packet->bytes_received = recvfrom(sockfd, buffer, PAYLOAD_SIZE + sizeof(struct ip), 0,
                                     (struct sockaddr*)&recv_addr, &addr_len);
         packet->ip_header = (struct ip*)buffer;
         packet->ip_header_length = packet->ip_header->ip_hl * 4;
-        packet->icmp = (struct icmp_header*)(buffer + packet->ip_header_length);
-        if (packet->icmp->type == ICMP_ECHOREPLY && ntohs(packet->icmp->identifier) == getpid()) {
+        packet->icmp = (struct icmphdr*)(buffer + packet->ip_header_length);
+        if (packet->icmp->type == ICMP_ECHOREPLY && htons(packet->icmp->un.echo.id) == identifier) {
            break;
+        }
+        else if (packet->icmp->type != ICMP_ECHO)
+        {
+            orig_ip_header = (struct ip*)(buffer + packet->ip_header_length + sizeof(struct icmphdr));
+            orig_ip_header_length = orig_ip_header->ip_hl * 4;
+            orig_icmp_header = (struct icmphdr*)((char*)orig_ip_header + orig_ip_header_length);
+            if (htons(orig_icmp_header->un.echo.id) == identifier){
+                break;
+            }
         }
         free(buffer);
     }
@@ -37,7 +49,7 @@ t_parsed_packet *parse_packet(int sockfd)
     return packet;
 }
 
-void display_verbose_info(struct ip *ip_hdr, struct icmp_header *icmp_hdr) {
+void display_verbose_info(struct ip *ip_hdr, struct icmphdr *icmp_hdr) {
     unsigned int    i;
     size_t          size;
     char            *src_ip;
@@ -77,8 +89,8 @@ void display_verbose_info(struct ip *ip_hdr, struct icmp_header *icmp_hdr) {
            icmp_hdr->type,
            icmp_hdr->code,
            ntohs(ip_hdr->ip_len) - sizeof(struct ip),
-           ntohs(icmp_hdr->identifier),
-           ntohs(icmp_hdr->sequence));
+           ntohs(icmp_hdr->un.echo.id),
+           ntohs(icmp_hdr->un.echo.sequence));
     free(src_ip);
     free(dst_ip);
 }
@@ -113,7 +125,7 @@ float receive_ping(int sockfd, t_args *args) {
     t_parsed_packet *packet;
     float            rtt;
 
-    packet = parse_packet(sockfd);
+    packet = parse_packet(sockfd, args->identifier);
     if (packet->icmp->type) {
         handle_packet(packet);
     }
@@ -134,7 +146,7 @@ float receive_ping(int sockfd, t_args *args) {
         printf("%ld bytes from %s: icmp_seq=%d ttl=%d time=%.3f ms\n",
                packet->bytes_received - packet->ip_header_length,
                args->ip,
-               ntohs(packet->icmp->sequence),
+               ntohs(packet->icmp->un.echo.sequence),
                packet->ip_header->ip_ttl,
                rtt);
         free(packet->ip_header);

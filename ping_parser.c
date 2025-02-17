@@ -1,5 +1,40 @@
 #include "ft_ping.h"
 
+int parse_int(const char *value, int min, int max, const char *flag) {
+    char  *endptr;
+    long  result;
+
+    errno = 0;
+    result = strtol(value, &endptr, 10);
+    if (errno == ERANGE || result > max || result < min) {
+        fprintf(stderr, "Error: %s value '%s' is out of range (%d to %d).\n", flag, value, min, max);
+        exit(EXIT_FAILURE);
+    }
+    if (*endptr != '\0') {
+        fprintf(stderr, "Error: Invalid %s value '%s'.\n", flag, value);
+        exit(EXIT_FAILURE);
+    }
+
+    return (int)result;
+}
+
+float parse_float(const char *value, float min, float max, const char *flag) {
+    char    *endptr;
+    double  result;
+
+    result = strtod(value, &endptr);
+    errno = 0;
+    if (errno == ERANGE || result > max || result < min) {
+        fprintf(stderr, "Error: %s value '%s' is out of range (%.1f to %.1f).\n", flag, value, min, max);
+        exit(EXIT_FAILURE);
+    }
+    if (*endptr != '\0') {
+        fprintf(stderr, "Error: Invalid %s value '%s'.\n", flag, value);
+        exit(EXIT_FAILURE);
+    }
+
+    return (float)result;
+}
 
 int resolve_hostname(const char *hostname, struct sockaddr_in *dest_addr) {
   struct addrinfo hints, *result;
@@ -17,6 +52,7 @@ int resolve_hostname(const char *hostname, struct sockaddr_in *dest_addr) {
 
 bool is_valid_ip(const char *ip) {
     struct sockaddr_in sa;
+
     return inet_pton(AF_INET, ip, &(sa.sin_addr)) == 0 ? false : true;
 }
 
@@ -37,19 +73,34 @@ void fill_args(t_args *arg, const char *hostname) {
     arg->invalid_arg = strdup(hostname);
     return ;
   }
-  if (!arg->hostname){
-    arg->hostname = strdup(hostname);
-    if (is_valid_ip(hostname) == true){
-      arg->ip = strdup(hostname);
-    }
-    else {
-      arg->ip = strdup(inet_ntoa(dest_addr.sin_addr));
-    }
+  free(arg->hostname);
+  free(arg->ip);
+  arg->hostname = strdup(hostname);
+  if (is_valid_ip(hostname) == true){
+    arg->ip = strdup(hostname);
+  }
+  else {
+    arg->ip = strdup(inet_ntoa(dest_addr.sin_addr));
   }
 }
 
 PingFlags  get_option( const char *arg ){
-  if (strcmp(arg, "--usage") == 0){
+  if (strcmp(arg, "-c") == 0){
+    return FLAG_COUNT;
+  }
+  else if (strcmp(arg, "-i") == 0){
+    return FLAG_INTERVAL;
+  }
+  else if (strcmp(arg, "-w") == 0){
+    return FLAG_TIMEOUT;
+  }
+  else if (strcmp(arg, "-W") == 0){
+    return FLAG_REPLY_TIMEOUT;
+  }
+  else if (strcmp(arg, "-t") == 0 || strcmp(arg, "--ttl") == 0){
+    return FLAG_TTL;
+  }
+  else if (strcmp(arg, "--usage") == 0){
     return FLAG_USAGE;
   }
   else if (strcmp(arg, "-?") == 0 || strcmp(arg, "--help") == 0) {
@@ -65,7 +116,7 @@ void parse_flags(int argc, char *argv[], t_args *options) {
   int i;
 
   i = 1;
-  while (i < argc && !options->invalid_arg)
+  while (i < argc)
   {
       if (get_option(argv[i]) == FLAG_HELP) {
         options->option = FLAG_HELP;
@@ -75,6 +126,16 @@ void parse_flags(int argc, char *argv[], t_args *options) {
       } else if (get_option(argv[i]) == FLAG_USAGE) {
         options->option = FLAG_USAGE;
         break;
+      } else if (get_option(argv[i]) == FLAG_INTERVAL && i + 1 < argc) {
+          options->interval = parse_int(argv[++i], 1, MAX_INTERVAL, "-i");
+      } else if (get_option(argv[i]) == FLAG_TTL && i + 1 < argc) {
+          options->ttl = parse_int(argv[++i], 1, MAX_TTL, "--ttl");
+      } else if (get_option(argv[i]) == FLAG_TIMEOUT && i + 1 < argc) {
+          options->timeout = parse_int(argv[++i], 1, INT_MAX, "-w");
+      } else if (get_option(argv[i]) == FLAG_REPLY_TIMEOUT && i + 1 < argc) {
+          options->reply_timeout = parse_float(argv[++i], MIN_REPLY_TIMEOUT, FLT_MAX, "-W");
+      } else if (get_option(argv[i]) == FLAG_COUNT && i + 1 < argc) {
+          options->count = parse_int(argv[++i], 1, INT_MAX, "-c");
       } else if (get_option(argv[i]) == FLAG_DOMAIN) {
         fill_args(options, argv[i]);
       } else {
@@ -89,9 +150,13 @@ t_args *get_new_args() {
   t_args *args = malloc(sizeof(t_args));
   args->hostname = NULL;
   args->ip = NULL;
-  args->option = 0;
+  args->option = -1;
   args->invalid_arg = NULL;
   args->packets_sent = 0;
-  args->identifier = 0;
+  args->interval = 1;
+  args->ttl = 64;
+  args->timeout = 0;
+  args->reply_timeout = RECV_TIMEOUT;
+  args->count = -1;
   return args;
 }

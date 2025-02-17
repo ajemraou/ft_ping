@@ -8,6 +8,7 @@ void    interrupt_handler(int signal) {
     }
 }
 
+
 t_statis    *init_statistics_list()
 {
     t_statis *list;
@@ -20,7 +21,7 @@ t_statis    *init_statistics_list()
     return list;
 }
 
-int socket_setup( const char *ip_address, struct sockaddr_in *dest_addr )
+int socket_setup( t_args *args, struct sockaddr_in *dest_addr )
 {
     struct timeval  tv_timeout;
     int             sockfd;
@@ -29,13 +30,19 @@ int socket_setup( const char *ip_address, struct sockaddr_in *dest_addr )
     if (sockfd < 0) {
         return -1;
     }
-    tv_timeout.tv_sec = RECV_TIMEOUT;
+    tv_timeout.tv_sec = args->reply_timeout;
     tv_timeout.tv_usec = 0;
-    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO,
-               &tv_timeout, sizeof(tv_timeout));
+    if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO,&tv_timeout, sizeof(tv_timeout))) {
+        close(sockfd);
+        exit(EXIT_FAILURE);
+    }
+    if (setsockopt(sockfd, IPPROTO_IP, IP_TTL, &args->ttl, sizeof(args->ttl)) < 0) {
+        close(sockfd);
+        exit(EXIT_FAILURE);
+    }
     memset(dest_addr, 0, sizeof(*dest_addr));
     dest_addr->sin_family = AF_INET;
-    if (inet_pton(AF_INET, ip_address, &dest_addr->sin_addr) <= 0) {
+    if (inet_pton(AF_INET, args->ip, &dest_addr->sin_addr) <= 0) {
         return -1;
     }
     return sockfd;
@@ -56,17 +63,29 @@ void    print_statistics(t_args *args, t_statis *list)
     }
 }
 
+bool check_timeout(time_t start_time, t_args *options) {
+    time_t  current_time;
+    int     elapsed_time;
 
+    if (options->timeout == 0) {
+        return false;
+    }
+    current_time = time(NULL);
+    elapsed_time = (int)(current_time - start_time);
+    return elapsed_time >= options->timeout;
+}
 
 int ft_ping( t_args *args, int sockfd, struct sockaddr_in *dest_addr )
 {
-    float   rtt;
-    t_statis *list;
+    t_statis    *list;
+    time_t      start_time;
+    float       rtt;
 
+    start_time = time(NULL);
     list = init_statistics_list();
-    while (keep_running) {
+    while (keep_running && args->count) {
         args->packets_sent++;
-        if (send_ping(sockfd, dest_addr, args->packets_sent) < 0) {
+        if (send_ping(sockfd, dest_addr, args) < 0) {
             continue;
         }
         rtt = receive_ping(sockfd, args);
@@ -80,7 +99,13 @@ int ft_ping( t_args *args, int sockfd, struct sockaddr_in *dest_addr )
             list->max_rtt = rtt;
            }
        }
-       usleep(PING_SLEEP_RATE);
+       if (args->count > 0){
+        args->count--;
+       }
+       else if (check_timeout(start_time, args)){
+        break ;
+       }
+       usleep(PING_SLEEP_RATE * args->interval);
     }
     print_statistics(args, list);
     free(list);

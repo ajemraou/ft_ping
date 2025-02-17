@@ -22,7 +22,7 @@ uint16_t    calculate_checksum(void *buffer, int length) {
     return ~sum;
 }
 
-void    fill_data( char *buffer, int size ){
+void    fill_payload( char *buffer, int size ){
     int i;
 
     i = 0;
@@ -33,21 +33,21 @@ void    fill_data( char *buffer, int size ){
     }
 }
 
-int send_ping(int sockfd, struct sockaddr_in *dest_addr, int seq_no) {
-    t_icmp *icmp;
+int send_ping(int sockfd, struct sockaddr_in *dest_addr, t_args *args) {
+    struct icmphdr *icmp;
     char    *packet;
     int     result;
 
-    packet = malloc(PING_PKT_SIZE);
-    icmp = (struct icmp_header *)packet;
-    memset(packet, 0, PING_PKT_SIZE);
+    packet = malloc(PAYLOAD_SIZE);
+    icmp = (struct icmphdr *)packet;
+    memset(packet, 0, PAYLOAD_SIZE);
     icmp->type = ICMP_ECHO;
     icmp->code = 0;
-    icmp->identifier = htons(getpid() & 0xFFFF);
-    icmp->sequence = htons(seq_no);
-    fill_data(packet + sizeof(struct icmp_header), DATA_SIZE);
-    icmp->checksum = calculate_checksum((uint16_t *)icmp, PING_PKT_SIZE);
-    result = sendto(sockfd, packet, PING_PKT_SIZE, 0,
+    icmp->un.echo.id = htons(getpid() & 0xFFFF);
+    icmp->un.echo.sequence = htons(args->packets_sent);
+    fill_payload(packet + sizeof(struct icmphdr), DATA_SIZE);
+    icmp->checksum = calculate_checksum((uint16_t *)icmp, sizeof(struct icmphdr) + PAYLOAD_SIZE);
+    result = sendto(sockfd, packet, PAYLOAD_SIZE, 0,
                  (struct sockaddr *)dest_addr, sizeof(*dest_addr));
     free(packet);
     return result;
