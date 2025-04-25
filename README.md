@@ -19,8 +19,6 @@
 ## Introduction
 `ft_ping` is a custom implementation of the well-known `ping` command, built from scratch using C and raw sockets. This program sends ICMP Echo Request packets and measures round-trip times, similar to the standard `ping` utility.
 
-Unlike traditional implementations that rely heavily on the kernel's networking stack, `ft_ping` takes a more hands-on approach, directly handling low-level socket operations, packet construction, and parsing.
-
 ---
 
 ## Motivation
